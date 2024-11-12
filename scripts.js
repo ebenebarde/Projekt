@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const sqlite3 = require('sqlite3').verbose();
 const session = require('express-session');
 const bcrypt = require('bcrypt');
+const fetch = require('node-fetch');
 
 const app = express();
 const db = new sqlite3.Database('datenbank.db');
@@ -15,6 +16,15 @@ app.use(session({
     saveUninitialized: true
 }));
 
+// Middleware zum Überprüfen, ob der Benutzer eingeloggt ist
+function isAuthenticated(req, res, next) {
+    if (req.session.userId) {
+        next();
+    } else {
+        res.redirect('/login');
+    }
+}
+
 // Tabelle für Benutzer erstellen (mit Feld für letzten Login)
 db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS users (
@@ -25,11 +35,24 @@ db.serialize(() => {
     )`);
 });
 
+// Tabelle für Positionen erstellen
+db.serialize(() => {
+    db.run(`CREATE TABLE IF NOT EXISTS positions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        isin TEXT,
+        name TEXT,
+        purchase_price REAL,
+        quantity INTEGER,
+        FOREIGN KEY(user_id) REFERENCES users(id)
+    )`);
+});
+
 function requireLogin(req, res, next) {
-    if (!req.session.userId) {
-        res.redirect('/login');
-    } else {
+    if (req.session.userId) {
         next();
+    } else {
+        res.redirect('/login');
     }
 }
 
@@ -84,38 +107,25 @@ app.get('/login', (req, res) => {
     `);
 });
 
+// Login-Route anpassen
 app.post('/login', (req, res) => {
     const { username, password } = req.body;
-    db.get("SELECT * FROM users WHERE username = ?", [username], (err, user) => {
+    db.get(`SELECT * FROM users WHERE username = ?`, [username], (err, user) => {
         if (err) {
             console.error(err);
-            return res.send('Ein Fehler ist aufgetreten.');
+            res.send('Fehler bei der Anmeldung.');
+        } else if (!user) {
+            res.send('Ungültige Anmeldedaten.');
+        } else {
+            bcrypt.compare(password, user.password, (err, result) => {
+                if (result) {
+                    req.session.userId = user.id;
+                    res.redirect('/portfolio'); // Benutzer zur Portfolioseite weiterleiten
+                } else {
+                    res.send('Ungültige Anmeldedaten.');
+                }
+            });
         }
-        if (!user) {
-            return res.send('Benutzer nicht gefunden.');
-        }
-        // Asynchroner Passwortvergleich
-        bcrypt.compare(password, user.password, (err, result) => {
-            if (err) {
-                console.error(err);
-                return res.send('Ein Fehler ist aufgetreten.');
-            }
-            if (result) {
-                // Passwörter stimmen überein
-                req.session.userId = user.id;
-                // Letzten Login-Zeitpunkt speichern
-                const loginTime = new Date().toISOString();
-                db.run("UPDATE users SET last_login = ? WHERE id = ?", [loginTime, user.id], (err) => {
-                    if (err) {
-                        console.error(err);
-                    }
-                    res.redirect('/hauptseite');
-                });
-            } else {
-                // Passwort stimmt nicht
-                res.send('Ungültige Anmeldedaten.');
-            }
-        });
     });
 });
 
@@ -126,6 +136,66 @@ app.get('/hauptseite', requireLogin, (req, res) => {
         <a href="/logout">Abmelden</a>
     `);
 });
+
+// Route zum Anzeigen des Portfolios
+app.get('/portfolio', requireLogin, (req, res) => {
+    db.all(`SELECT * FROM positions WHERE user_id = ?`, [req.session.userId], (err, positions) => {
+        if (err) {
+            console.error(err);
+            res.send('Fehler beim Laden des Portfolios');
+        } else {
+            let completedRequests = 0;
+            if (positions.length === 0) {
+                res.render('portfolio.ejs', { positions: [] });
+            } else {
+                positions.forEach((position, index) => {
+                    getCurrentPrice(position.isin, (err, price) => {
+                        if (err) {
+                            console.error(err);
+                            positions[index].currentPrice = 0;
+                        } else {
+                            positions[index].currentPrice = price;
+                        }
+                        completedRequests++;
+                        if (completedRequests === positions.length) {
+                            res.render('portfolio.ejs', { positions: positions });
+                        }
+                    });
+                });
+            }
+        }
+    });
+});
+
+// Route zum Hinzufügen einer Position
+app.post('/addPosition', isAuthenticated, (req, res) => {
+    const { isin, name, purchase_price, quantity } = req.body;
+    db.run(`INSERT INTO positions (user_id, isin, name, purchase_price, quantity) VALUES (?, ?, ?, ?, ?)`,
+        [req.session.userId, isin, name, purchase_price, quantity],
+        function(err) {
+            if (err) {
+                console.error(err);
+                res.send('Fehler beim Hinzufügen der Position');
+            } else {
+                res.redirect('/portfolio');
+            }
+        }
+    );
+});
+
+// Funktion zum Abrufen des aktuellen Preises
+function getCurrentPrice(isin, callback) {
+    const apiUrl = `https://api.example.com/stock/${isin}`;
+    fetch(apiUrl)
+        .then(response => response.json())
+        .then(data => {
+            const currentPrice = data.currentPrice;
+            callback(null, currentPrice);
+        })
+        .catch(err => {
+            callback(err);
+        });
+}
 
 app.get('/logout', (req, res) => {
     req.session.destroy(err => {
