@@ -40,7 +40,7 @@ db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS positions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER,
-        isin TEXT,
+        symbol TEXT,
         name TEXT,
         purchase_price REAL,
         quantity INTEGER,
@@ -149,7 +149,7 @@ app.get('/portfolio', requireLogin, (req, res) => {
                 res.render('portfolio.ejs', { positions: [] });
             } else {
                 positions.forEach((position, index) => {
-                    getCurrentPrice(position.isin, (err, price) => {
+                    getCurrentPrice(position.symbol, (err, price) => {
                         if (err) {
                             console.error(err);
                             positions[index].currentPrice = 0;
@@ -169,9 +169,9 @@ app.get('/portfolio', requireLogin, (req, res) => {
 
 // Route zum Hinzufügen einer Position
 app.post('/addPosition', isAuthenticated, (req, res) => {
-    const { isin, name, purchase_price, quantity } = req.body;
-    db.run(`INSERT INTO positions (user_id, isin, name, purchase_price, quantity) VALUES (?, ?, ?, ?, ?)`,
-        [req.session.userId, isin, name, purchase_price, quantity],
+    const { symbol, name, purchase_price, quantity } = req.body;
+    db.run(`INSERT INTO positions (user_id, symbol, name, purchase_price, quantity) VALUES (?, ?, ?, ?, ?)`,
+        [req.session.userId, symbol, name, purchase_price, quantity],
         function(err) {
             if (err) {
                 console.error(err);
@@ -184,17 +184,31 @@ app.post('/addPosition', isAuthenticated, (req, res) => {
 });
 
 // Funktion zum Abrufen des aktuellen Preises
-function getCurrentPrice(isin, callback) {
-    const apiUrl = `https://api.example.com/stock/${isin}`;
-    fetch(apiUrl)
-        .then(response => response.json())
-        .then(data => {
-            const currentPrice = data.currentPrice;
-            callback(null, currentPrice);
-        })
-        .catch(err => {
-            callback(err);
-        });
+function getCurrentPrice(symbol, callback) {
+    (async () => {
+        const url = 'https://yahoo-finance15.p.rapidapi.com/api/v1/markets/stock/history?symbol='+symbol+'&interval=5m&diffandsplits=false';
+        const options = {
+            method: 'GET',
+            headers: {
+                'x-rapidapi-key': 'bfc13c9f57mshcbf4aa4dfe2cdf1p109658jsn43aa4ff58622',
+                'x-rapidapi-host': 'yahoo-finance15.p.rapidapi.com'
+            }
+        };
+
+        try {
+            const response = await fetch(url, options);
+            const result = await response.text();
+
+            const regex = /"regularMarketPrice":([0-9]+\.[0-9]{2})/
+            const currentPrice = regex.exec(result)
+            
+            callback(null, currentPrice[1]);
+
+            return currentPrice[1]
+        } catch (error) {
+            callback(error);
+        }
+    })();
 }
 
 app.get('/logout', (req, res) => {
