@@ -149,18 +149,20 @@ app.get('/portfolio', requireLogin, (req, res) => {
                 res.render('portfolio.ejs', { positions: [] });
             } else {
                 positions.forEach((position, index) => {
-                    getCurrentPrice(position.symbol, (err, price) => {
-                        if (err) {
-                            console.error(err);
-                            positions[index].currentPrice = 0;
-                        } else {
-                            positions[index].currentPrice = price;
-                        }
-                        completedRequests++;
-                        if (completedRequests === positions.length) {
-                            res.render('portfolio.ejs', { positions: positions });
-                        }
-                    });
+                    let stockDollarValue = getCurrentPrice(position.symbol)
+
+                    console.log(stockDollarValue);
+                    
+                    /*if (err) {
+                        console.error(err);
+                        positions[index].currentPrice = 0;
+                    } else {
+                        positions[index].currentPrice = price;
+                    }
+                    completedRequests++;
+                    if (completedRequests === positions.length) {
+                        res.render('portfolio.ejs', { positions: positions });
+                    }*/
                 });
             }
         }
@@ -184,7 +186,7 @@ app.post('/addPosition', isAuthenticated, (req, res) => {
 });
 
 // Funktion zum Abrufen des aktuellen Preises
-function getCurrentPrice(symbol, callback) {
+function getCurrentPrice(symbol) {
     (async () => {
         const url = 'https://yahoo-finance15.p.rapidapi.com/api/v1/markets/stock/history?symbol='+symbol+'&interval=5m&diffandsplits=false';
         const options = {
@@ -199,16 +201,16 @@ function getCurrentPrice(symbol, callback) {
             const response = await fetch(url, options);
             const result = await response.text();
 
-            const regex = /"regularMarketPrice":([0-9]+\.[0-9]{2})/
-            const currentPrice = regex.exec(result)
-            
-            callback(null, currentPrice[1]);
+            const regex = /"regularMarketPrice":([0-9]+\.[0-9]{2})/;
+            const currentPrice = regex.exec(result);
+            const stockPrice = currentPrice[1];
 
-            return currentPrice[1]
+            console.log(stockPrice);
+            return stockPrice;
         } catch (error) {
-            callback(error);
+            console.log(error);
         }
-    })();
+    });
 }
 
 app.get('/logout', (req, res) => {
