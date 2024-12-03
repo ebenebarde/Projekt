@@ -9,7 +9,7 @@
     <form action="/addPosition" method="post">
         <input type="text" name="symbol" placeholder="Symbol" required>
         <input type="text" name="name" placeholder="Name der Aktie" required>
-        <input type="number" step="0.01" name="purchase_price" placeholder="Kaufwert" required>
+        <input type="number" step="0.01" name="purchase_price" placeholder="Kaufwert ($)" required>
         <input type="number" name="quantity" placeholder="Menge" required>
         <button type="submit">Position hinzufügen</button>
     </form>
@@ -18,22 +18,28 @@
             <tr>
                 <th>Symbol</th>
                 <th>Name</th>
-                <th>Kaufwert</th>
+                <th>Kaufwert ($)</th>
                 <th>Menge</th>
-                <th>Aktueller Preis</th>
-                <th>Positionswert</th>
+                <th>Aktueller Preis ($)</th>
+                <th>Positionswert ($)</th>
+                <th>Gewinn / Verlust seit Kauf ($)</th>
             </tr>
         </thead>
         <tbody>
-            <% positions.forEach(function(position) { %>
-                <tr>
-                    <td><%= position.symbol %></td>
-                    <td><%= position.name %></td>
-                    <td><%= position.purchase_price %> €</td>
-                    <td><%= position.quantity %></td>
-                    <td><%= position.currentPrice %> €</td>
-                    <td><%= (position.currentPrice * position.quantity).toFixed(2) %> €</td>
-                </tr>
+            <% positions.forEach(function(position) {
+                let positionValue = position.currentPrice * position.quantity;
+                let cost = position.purchase_price * position.quantity;
+                let profitLoss = positionValue - cost;
+            %>
+            <tr>
+                <td><%= position.symbol %></td>
+                <td><%= position.name %></td>
+                <td><%= position.purchase_price.toFixed(2) %></td>
+                <td><%= position.quantity %></td>
+                <td><%= position.currentPrice.toFixed(2) %></td>
+                <td><%= positionValue.toFixed(2) %></td>
+                <td><%= profitLoss.toFixed(2) %></td>
+            </tr>
             <% }); %>
         </tbody>
     </table>

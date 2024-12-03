@@ -1,21 +1,25 @@
+require('dotenv').config();
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const sqlite3 = require('sqlite3').verbose();
 const session = require('express-session');
 const bcrypt = require('bcrypt');
 const fetch = require('node-fetch');
-const $ = require('jquery');
 
 const app = express();
 const db = new sqlite3.Database('datenbank.db');
 
 app.use(bodyParser.urlencoded({ extended: false }));
+app.use(express.static('public'));
 
 app.use(session({
     secret: 'Ihr geheimer Schlüssel',
     resave: false,
     saveUninitialized: true
 }));
+
+app.set('view engine', 'ejs');
 
 // Middleware zum Überprüfen, ob der Benutzer eingeloggt ist
 function isAuthenticated(req, res, next) {
@@ -138,8 +142,8 @@ app.get('/hauptseite', requireLogin, (req, res) => {
     `);
 });
 
-// Route zum Anzeigen des Portfolios
-app.get('/portfolio', requireLogin, async (req, res) => {
+// Route zum Anzeigen des Portfolios anpassen
+app.get('/portfolio', isAuthenticated, async (req, res) => {
     try {
         const positions = await new Promise((resolve, reject) => {
             db.all(`SELECT * FROM positions WHERE user_id = ?`, [req.session.userId], (err, positions) => {
@@ -165,9 +169,9 @@ app.get('/portfolio', requireLogin, async (req, res) => {
 });
 
 // Route zum Hinzufügen einer Position
-app.post('/addPosition', isAuthenticated, (req, res) => {
+app.post('/addPosition', isAuthenticated,  (req, res) => {
     const { symbol, name, purchase_price, quantity } = req.body;
-    db.run(`INSERT INTO positions (user_id, symbol, name, purchase_price, quantity) VALUES (?, ?, ?, ?, ?)`,
+    db.run(`INSERT INTO positions (user_id, symbol,   name,    purchase_price, quantity) VALUES (?, ?, ?, ?, ?)`,
         [req.session.userId, symbol, name, purchase_price, quantity],
         function(err) {
             if (err) {
@@ -180,22 +184,19 @@ app.post('/addPosition', isAuthenticated, (req, res) => {
     );
 });
 
-// Funktion zum Abrufen des aktuellen Preises
+// Funktion zum Abrufen des aktuellen Preises mit der Polygon API
 async function getCurrentPrice(symbol) {
-    const url = `https://yahoo-finance166.p.rapidapi.com/api/stock/get-price?region=US&symbol=${symbol}`;
-    const options = {
-        method: 'GET',
-        headers: {
-            'x-rapidapi-key': '8f5be43db5mshc4337ba6dbeed08p1c801fjsnf0d72af9ebec',
-            'x-rapidapi-host': 'yahoo-finance166.p.rapidapi.com'
-        }
-    };
+    const apiKey = process.env.POLYGON_API_KEY;
+    const url = `https://api.polygon.io/v2/aggs/ticker/${symbol}/prev?adjusted=true&apiKey=${apiKey}`;
 
     try {
-        const response = await fetch(url, options);
+        const response = await fetch(url);
         const data = await response.json();
-        if (data && data.data && data.data.price) {
-            return data.data.price;
+        console.log(data); // Debugging
+
+        if (data && data.results && data.results.length > 0) {
+            const closePrice = data.results[0].c; // Schlusskurs
+            return closePrice;
         } else {
             throw new Error('Keine Preisdaten verfügbar');
         }

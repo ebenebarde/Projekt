@@ -1,11 +1,12 @@
 body {
-    background-color: #121212;
-    color: #FFFFFF;
+    background-color: #000000;
+    color: #FF00FF; /* Magenta */
     font-family: Arial, sans-serif;
 }
 
 h1 {
     text-align: center;
+    color: #FF00FF;
 }
 
 form {
@@ -19,7 +20,7 @@ input, button {
     margin-bottom: 10px;
     background-color: #1E1E1E;
     border: none;
-    color: #FFFFFF;
+    color: #FF00FF;
 }
 
 button {
@@ -35,11 +36,13 @@ table {
     width: 80%;
     margin: 20px auto;
     border-collapse: collapse;
+    color: #FF00FF;
 }
 
 th, td {
     padding: 12px;
     border: 1px solid #333333;
+    text-align: center;
 }
 
 th {
@@ -48,4 +51,9 @@ th {
 
 tr:nth-child(even) {
     background-color: #1A1A1A;
+}
+
+canvas {
+    display: block;
+    margin: 20px auto;
 }
