@@ -26,6 +26,7 @@
             </tr>
         </thead>
         <tbody>
+<<<<<<< HEAD
             <% positions.forEach(function(position) {
                 let positionValue = position.currentPrice * position.quantity;
                 let cost = position.purchase_price * position.quantity;
@@ -40,6 +41,17 @@
                 <td><%= positionValue.toFixed(2) %></td>
                 <td><%= profitLoss.toFixed(2) %></td>
             </tr>
+=======
+            <% positions.forEach(function(position) { %>
+                <tr>
+                    <td><%= position.symbol %></td>
+                    <td><%= position.name %></td>
+                    <td><%= position.purchase_price %> €</td>
+                    <td><%= position.quantity %></td>
+                    <td><%= position.currentPrice %> €</td>
+                    <td><%= (position.currentPrice * position.quantity).toFixed(2) %> €</td>
+                </tr>
+>>>>>>> be993140dfa487af39c0fcd89a67133eb064844b
             <% }); %>
         </tbody>
     </table>

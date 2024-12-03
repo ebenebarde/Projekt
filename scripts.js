@@ -67,6 +67,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/register', (req, res) => {
+    const error = req.query.error;
     res.send(`
         <h1>Registrierung</h1>
         <form method="POST" action="/register">
@@ -76,24 +77,30 @@ app.get('/register', (req, res) => {
             <input type="password" name="password" required><br><br>
             <input type="submit" value="Registrieren">
         </form>
+        ${error ? `<p style="color:red;">${error}</p>` : ''}
         <p>Bereits registriert? <a href="/login">Hier anmelden</a></p>
     `);
 });
 
 app.post('/register', (req, res) => {
     const { username, password } = req.body;
-    // Asynchrones Hashing des Passworts
-    bcrypt.hash(password, 10, (err, hashedPassword) => {
-        if (err) {
-            console.error(err);
-            return res.send('Ein Fehler ist aufgetreten.');
+    db.get("SELECT * FROM users WHERE username = ?", [username], (err, user) => {
+        if (user) {
+            return res.redirect('/register?error=Benutzername bereits vergeben.');
         }
-        db.run("INSERT INTO users (username, password) VALUES (?, ?)", [username, hashedPassword], function(err) {
+        // Asynchrones Hashing des Passworts
+        bcrypt.hash(password, 10, (err, hashedPassword) => {
             if (err) {
                 console.error(err);
                 return res.send('Ein Fehler ist aufgetreten.');
             }
-            res.redirect('/login');
+            db.run("INSERT INTO users (username, password) VALUES (?, ?)", [username, hashedPassword], function(err) {
+                if (err) {
+                    console.error(err);
+                    return res.send('Ein Fehler ist aufgetreten.');
+                }
+                res.redirect('/login');
+            });
         });
     });
 });
