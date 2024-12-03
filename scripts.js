@@ -106,6 +106,7 @@ app.post('/register', (req, res) => {
 });
 
 app.get('/login', (req, res) => {
+    const error = req.query.error;
     res.send(`
         <h1>Anmeldung</h1>
         <form method="POST" action="/login">
@@ -115,26 +116,26 @@ app.get('/login', (req, res) => {
             <input type="password" name="password" required><br><br>
             <input type="submit" value="Anmelden">
         </form>
+        ${error ? `<p style="color:red;">${error}</p>` : ''}
         <p>Noch nicht registriert? <a href="/register">Jetzt registrieren</a></p>
     `);
 });
 
-// Login-Route anpassen
 app.post('/login', (req, res) => {
     const { username, password } = req.body;
     db.get(`SELECT * FROM users WHERE username = ?`, [username], (err, user) => {
         if (err) {
             console.error(err);
-            res.send('Fehler bei der Anmeldung.');
+            res.redirect('/login?error=Fehler bei der Anmeldung.');
         } else if (!user) {
-            res.send('Ungültige Anmeldedaten.');
+            res.redirect('/login?error=Ungültige Anmeldedaten.');
         } else {
             bcrypt.compare(password, user.password, (err, result) => {
                 if (result) {
                     req.session.userId = user.id;
                     res.redirect('/portfolio'); // Benutzer zur Portfolioseite weiterleiten
                 } else {
-                    res.send('Ungültige Anmeldedaten.');
+                    res.redirect('/login?error=Ungültige Anmeldedaten.');
                 }
             });
         }
@@ -173,6 +174,19 @@ app.get('/portfolio', isAuthenticated, async (req, res) => {
         console.error('Fehler beim Laden des Portfolios:', error);
         res.send('Fehler beim Laden des Portfolios');
     }
+});
+
+// Route zum Löschen einer Position hinzufügen
+app.post('/deletePosition', isAuthenticated, (req, res) => {
+    const { id } = req.body;
+    db.run(`DELETE FROM positions WHERE id = ? AND user_id = ?`, [id, req.session.userId], function(err) {
+        if (err) {
+            console.error(err);
+            res.send('Fehler beim Löschen der Position');
+        } else {
+            res.redirect('/portfolio');
+        }
+    });
 });
 
 // Route zum Hinzufügen einer Position

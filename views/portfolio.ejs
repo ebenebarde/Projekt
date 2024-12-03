@@ -23,6 +23,7 @@
                 <th>Aktueller Preis ($)</th>
                 <th>Positionswert ($)</th>
                 <th>Gewinn / Verlust seit Kauf ($)</th>
+                <th>Aktionen</th>
             </tr>
         </thead>
         <tbody>
@@ -39,9 +40,18 @@
                 <td><%= position.currentPrice.toFixed(2) %></td>
                 <td><%= positionValue.toFixed(2) %></td>
                 <td><%= profitLoss.toFixed(2) %></td>
+                <td>
+                    <form method="POST" action="/deletePosition" style="display:inline;">
+                        <input type="hidden" name="id" value="<%= position.id %>">
+                        <button type="submit">Löschen</button>
+                    </form>
+                </td>
             </tr>
             <% }); %>
         </tbody>
     </table>
+    <form action="/logout" method="get" style="display:inline;">
+        <button type="submit">Abmelden</button>
+    </form>
 </body>
 </html>
