@@ -4,6 +4,7 @@ const sqlite3 = require('sqlite3').verbose();
 const session = require('express-session');
 const bcrypt = require('bcrypt');
 const fetch = require('node-fetch');
+const $ = require('jquery');
 
 const app = express();
 const db = new sqlite3.Database('datenbank.db');
@@ -40,7 +41,7 @@ db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS positions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER,
-        isin TEXT,
+        symbol TEXT,
         name TEXT,
         purchase_price REAL,
         quantity INTEGER,
@@ -138,40 +139,36 @@ app.get('/hauptseite', requireLogin, (req, res) => {
 });
 
 // Route zum Anzeigen des Portfolios
-app.get('/portfolio', requireLogin, (req, res) => {
-    db.all(`SELECT * FROM positions WHERE user_id = ?`, [req.session.userId], (err, positions) => {
-        if (err) {
-            console.error(err);
-            res.send('Fehler beim Laden des Portfolios');
-        } else {
-            let completedRequests = 0;
-            if (positions.length === 0) {
-                res.render('portfolio.ejs', { positions: [] });
-            } else {
-                positions.forEach((position, index) => {
-                    getCurrentPrice(position.isin, (err, price) => {
-                        if (err) {
-                            console.error(err);
-                            positions[index].currentPrice = 0;
-                        } else {
-                            positions[index].currentPrice = price;
-                        }
-                        completedRequests++;
-                        if (completedRequests === positions.length) {
-                            res.render('portfolio.ejs', { positions: positions });
-                        }
-                    });
-                });
+app.get('/portfolio', requireLogin, async (req, res) => {
+    try {
+        const positions = await new Promise((resolve, reject) => {
+            db.all(`SELECT * FROM positions WHERE user_id = ?`, [req.session.userId], (err, positions) => {
+                if (err) reject(err);
+                else resolve(positions);
+            });
+        });
+
+        for (const position of positions) {
+            try {
+                position.currentPrice = await getCurrentPrice(position.symbol);
+            } catch (error) {
+                console.error(`Fehler beim Abrufen des Preises für ${position.symbol}:`, error);
+                position.currentPrice = 0;
             }
         }
-    });
+
+        res.render('portfolio.ejs', { positions: positions });
+    } catch (error) {
+        console.error('Fehler beim Laden des Portfolios:', error);
+        res.send('Fehler beim Laden des Portfolios');
+    }
 });
 
 // Route zum Hinzufügen einer Position
 app.post('/addPosition', isAuthenticated, (req, res) => {
-    const { isin, name, purchase_price, quantity } = req.body;
-    db.run(`INSERT INTO positions (user_id, isin, name, purchase_price, quantity) VALUES (?, ?, ?, ?, ?)`,
-        [req.session.userId, isin, name, purchase_price, quantity],
+    const { symbol, name, purchase_price, quantity } = req.body;
+    db.run(`INSERT INTO positions (user_id, symbol, name, purchase_price, quantity) VALUES (?, ?, ?, ?, ?)`,
+        [req.session.userId, symbol, name, purchase_price, quantity],
         function(err) {
             if (err) {
                 console.error(err);
@@ -184,17 +181,28 @@ app.post('/addPosition', isAuthenticated, (req, res) => {
 });
 
 // Funktion zum Abrufen des aktuellen Preises
-function getCurrentPrice(isin, callback) {
-    const apiUrl = `https://api.example.com/stock/${isin}`;
-    fetch(apiUrl)
-        .then(response => response.json())
-        .then(data => {
-            const currentPrice = data.currentPrice;
-            callback(null, currentPrice);
-        })
-        .catch(err => {
-            callback(err);
-        });
+async function getCurrentPrice(symbol) {
+    const url = `https://yahoo-finance166.p.rapidapi.com/api/stock/get-price?region=US&symbol=${symbol}`;
+    const options = {
+        method: 'GET',
+        headers: {
+            'x-rapidapi-key': '8f5be43db5mshc4337ba6dbeed08p1c801fjsnf0d72af9ebec',
+            'x-rapidapi-host': 'yahoo-finance166.p.rapidapi.com'
+        }
+    };
+
+    try {
+        const response = await fetch(url, options);
+        const data = await response.json();
+        if (data && data.data && data.data.price) {
+            return data.data.price;
+        } else {
+            throw new Error('Keine Preisdaten verfügbar');
+        }
+    } catch (error) {
+        console.error('API Fehler:', error);
+        throw error;
+    }
 }
 
 app.get('/logout', (req, res) => {

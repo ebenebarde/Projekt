@@ -5,6 +5,8 @@
     "ejs": "^3.1.10",
     "express": "^4.21.1",
     "express-session": "^1.18.1",
+    "jquery": "^3.7.1",
+    "node-fetch": "^2.7.0",
     "rss-parser": "^3.13.0",
     "sqlite3": "^5.1.7"
   }
