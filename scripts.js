@@ -1,5 +1,4 @@
 require('dotenv').config();
-
 const express = require('express');
 const bodyParser = require('body-parser');
 const sqlite3 = require('sqlite3').verbose();
@@ -11,7 +10,7 @@ const app = express();
 const db = new sqlite3.Database('datenbank.db');
 
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use(express.static('public'));
+app.use(express.static('public')); // Statische Dateien aus dem 'public' Verzeichnis bereitstellen
 
 app.use(session({
     secret: 'Ihr geheimer Schlüssel',
@@ -74,7 +73,9 @@ app.get('/register', (req, res) => {
             <label>Benutzername:</label><br>
             <input type="text" name="username" required><br>
             <label>Passwort:</label><br>
-            <input type="password" name="password" required><br><br>
+            <input type="password" name="password" required><br>
+            <label>Passwort bestätigen:</label><br>
+            <input type="password" name="confirm_password" required><br><br>
             <input type="submit" value="Registrieren">
         </form>
         ${error ? `<p style="color:red;">${error}</p>` : ''}
@@ -83,7 +84,12 @@ app.get('/register', (req, res) => {
 });
 
 app.post('/register', (req, res) => {
-    const { username, password } = req.body;
+    const { username, password, confirm_password } = req.body;
+
+    if (password !== confirm_password) {
+        return res.redirect('/register?error=Passwörter stimmen nicht überein.');
+    }
+
     db.get("SELECT * FROM users WHERE username = ?", [username], (err, user) => {
         if (user) {
             return res.redirect('/register?error=Benutzername bereits vergeben.');
@@ -159,16 +165,21 @@ app.get('/portfolio', isAuthenticated, async (req, res) => {
             });
         });
 
+        let apiErrors = [];
         for (const position of positions) {
             try {
                 position.currentPrice = await getCurrentPrice(position.symbol);
             } catch (error) {
                 console.error(`Fehler beim Abrufen des Preises für ${position.symbol}:`, error);
                 position.currentPrice = 0;
+                apiErrors.push(`Fehler beim Abrufen des Preises für ${position.symbol}`);
             }
         }
 
-        res.render('portfolio.ejs', { positions: positions });
+        const message = req.query.message;
+        const error = req.query.error;
+
+        res.render('portfolio.ejs', { positions, message, error, apiErrors });
     } catch (error) {
         console.error('Fehler beim Laden des Portfolios:', error);
         res.send('Fehler beim Laden des Portfolios');
@@ -176,19 +187,46 @@ app.get('/portfolio', isAuthenticated, async (req, res) => {
 });
 
 // Route zum Hinzufügen einer Position
-app.post('/addPosition', isAuthenticated,  (req, res) => {
-    const { symbol, name, purchase_price, quantity } = req.body;
-    db.run(`INSERT INTO positions (user_id, symbol,   name,    purchase_price, quantity) VALUES (?, ?, ?, ?, ?)`,
+app.post('/addPosition', isAuthenticated, (req, res) => {
+    let { symbol, name, purchase_price, quantity } = req.body;
+
+    if (!symbol || !name || !purchase_price || !quantity) {
+        return res.redirect('/portfolio?error=Alle Felder müssen ausgefüllt werden.');
+    }
+
+    purchase_price = parseFloat(purchase_price);
+    quantity = parseInt(quantity);
+
+    if (isNaN(purchase_price) || isNaN(quantity) || quantity <= 0 || purchase_price <= 0) {
+        return res.redirect('/portfolio?error=Ungültige Eingabedaten.');
+    }
+
+    db.run(`INSERT INTO positions (user_id, symbol, name, purchase_price, quantity) VALUES (?, ?, ?, ?, ?)`,
         [req.session.userId, symbol, name, purchase_price, quantity],
         function(err) {
             if (err) {
                 console.error(err);
-                res.send('Fehler beim Hinzufügen der Position');
+                res.redirect('/portfolio?error=Fehler beim Hinzufügen der Position');
             } else {
-                res.redirect('/portfolio');
+                res.redirect('/portfolio?message=Position erfolgreich hinzugefügt');
             }
         }
     );
+});
+
+// Route zum Löschen einer Position
+app.post('/deletePosition', isAuthenticated, (req, res) => {
+    const positionId = req.body.positionId;
+    const userId = req.session.userId;
+
+    db.run(`DELETE FROM positions WHERE id = ? AND user_id = ?`, [positionId, userId], function(err) {
+        if (err) {
+            console.error(err);
+            res.redirect('/portfolio?error=Fehler beim Löschen der Position');
+        } else {
+            res.redirect('/portfolio?message=Position erfolgreich gelöscht');
+        }
+    });
 });
 
 // Funktion zum Abrufen des aktuellen Preises mit der Polygon API

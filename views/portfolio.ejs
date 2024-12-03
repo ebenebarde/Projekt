@@ -2,10 +2,37 @@
 <html>
 <head>
     <title>Portfolio Management</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
+    <!-- Abmelde-Button -->
+    <div class="logout-container">
+        <form action="/logout" method="GET" class="logout-form">
+            <button type="submit" class="logout-btn">Abmelden</button>
+        </form>
+    </div>
+
     <h1>Ihr Portfolio</h1>
+
+    <!-- Erfolgsmeldung -->
+    <% if (typeof message !== 'undefined') { %>
+        <p style="color: green;"><%= message %></p>
+    <% } %>
+
+    <!-- Fehlermeldung -->
+    <% if (typeof error !== 'undefined') { %>
+        <p style="color: red;"><%= error %></p>
+    <% } %>
+
+    <!-- API-Fehler anzeigen -->
+    <% if (apiErrors && apiErrors.length > 0) { %>
+        <ul>
+            <% apiErrors.forEach(function(err) { %>
+                <li><%= err %></li>
+            <% }); %>
+        </ul>
+    <% } %>
+
     <form action="/addPosition" method="post">
         <input type="text" name="symbol" placeholder="Symbol" required>
         <input type="text" name="name" placeholder="Name der Aktie" required>
@@ -23,6 +50,7 @@
                 <th>Aktueller Preis ($)</th>
                 <th>Positionswert ($)</th>
                 <th>Gewinn / Verlust seit Kauf ($)</th>
+                <th>Aktionen</th>
             </tr>
         </thead>
         <tbody>
@@ -39,6 +67,12 @@
                 <td><%= position.currentPrice.toFixed(2) %></td>
                 <td><%= positionValue.toFixed(2) %></td>
                 <td><%= profitLoss.toFixed(2) %></td>
+                <td>
+                    <form action="/deletePosition" method="POST" style="display:inline;">
+                        <input type="hidden" name="positionId" value="<%= position.id %>">
+                        <button type="submit">Löschen</button>
+                    </form>
+                </td>
             </tr>
             <% }); %>
         </tbody>
