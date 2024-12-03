@@ -7,7 +7,7 @@
 <body>
     <h1>Ihr Portfolio</h1>
     <form action="/addPosition" method="post">
-        <input type="text" name="isin" placeholder="ISIN" required>
+        <input type="text" name="symbol" placeholder="Symbol" required>
         <input type="text" name="name" placeholder="Name der Aktie" required>
         <input type="number" step="0.01" name="purchase_price" placeholder="Kaufwert" required>
         <input type="number" name="quantity" placeholder="Menge" required>
@@ -16,7 +16,7 @@
     <table>
         <thead>
             <tr>
-                <th>ISIN</th>
+                <th>Symbol</th>
                 <th>Name</th>
                 <th>Kaufwert</th>
                 <th>Menge</th>
@@ -27,7 +27,7 @@
         <tbody>
             <% positions.forEach(function(position) { %>
                 <tr>
-                    <td><%= position.isin %></td>
+                    <td><%= position.symbol %></td>
                     <td><%= position.name %></td>
                     <td><%= position.purchase_price %> €</td>
                     <td><%= position.quantity %></td>
