@@ -1,0 +1,46 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Registrierung</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .form-container {
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .form-container h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .form-container input, .form-container button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .form-container p {
+            text-align: center;
+        }
+        .form-container a {
+            color: #77aaff;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h1>Registrierung</h1>
+        <form method="POST" action="/register">
+            <input type="text" name="username" placeholder="Benutzername" required>
+            <input type="password" name="password" placeholder="Passwort" required>
+            <button type="submit" class="btn">Registrieren</button>
+        </form>
+        <% if (error) { %>
+            <p style="color:red;"><%= error %></p>
+        <% } %>
+        <p>Bereits registriert? <a href="/login">Hier anmelden</a></p>
+    </div>
+</body>
+</html>

@@ -68,18 +68,7 @@ app.get('/', (req, res) => {
 
 app.get('/register', (req, res) => {
     const error = req.query.error;
-    res.send(`
-        <h1>Registrierung</h1>
-        <form method="POST" action="/register">
-            <label>Benutzername:</label><br>
-            <input type="text" name="username" required><br>
-            <label>Passwort:</label><br>
-            <input type="password" name="password" required><br><br>
-            <input type="submit" value="Registrieren">
-        </form>
-        ${error ? `<p style="color:red;">${error}</p>` : ''}
-        <p>Bereits registriert? <a href="/login">Hier anmelden</a></p>
-    `);
+    res.render('register.ejs', { error: error });
 });
 
 app.post('/register', (req, res) => {
@@ -107,18 +96,7 @@ app.post('/register', (req, res) => {
 
 app.get('/login', (req, res) => {
     const error = req.query.error;
-    res.send(`
-        <h1>Anmeldung</h1>
-        <form method="POST" action="/login">
-            <label>Benutzername:</label><br>
-            <input type="text" name="username" required><br>
-            <label>Passwort:</label><br>
-            <input type="password" name="password" required><br><br>
-            <input type="submit" value="Anmelden">
-        </form>
-        ${error ? `<p style="color:red;">${error}</p>` : ''}
-        <p>Noch nicht registriert? <a href="/register">Jetzt registrieren</a></p>
-    `);
+    res.render('login.ejs', { error: error });
 });
 
 app.post('/login', (req, res) => {
