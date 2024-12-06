@@ -67,20 +67,7 @@ app.get('/', (req, res) => {
 
 app.get('/register', (req, res) => {
     const error = req.query.error;
-    res.send(`
-        <h1>Registrierung</h1>
-        <form method="POST" action="/register">
-            <label>Benutzername:</label><br>
-            <input type="text" name="username" required><br>
-            <label>Passwort:</label><br>
-            <input type="password" name="password" required><br>
-            <label>Passwort bestätigen:</label><br>
-            <input type="password" name="confirm_password" required><br><br>
-            <input type="submit" value="Registrieren">
-        </form>
-        ${error ? `<p style="color:red;">${error}</p>` : ''}
-        <p>Bereits registriert? <a href="/login">Hier anmelden</a></p>
-    `);
+    res.render('register.ejs', { error: error });
 });
 
 app.post('/register', (req, res) => {
@@ -112,35 +99,25 @@ app.post('/register', (req, res) => {
 });
 
 app.get('/login', (req, res) => {
-    res.send(`
-        <h1>Anmeldung</h1>
-        <form method="POST" action="/login">
-            <label>Benutzername:</label><br>
-            <input type="text" name="username" required><br>
-            <label>Passwort:</label><br>
-            <input type="password" name="password" required><br><br>
-            <input type="submit" value="Anmelden">
-        </form>
-        <p>Noch nicht registriert? <a href="/register">Jetzt registrieren</a></p>
-    `);
+    const error = req.query.error;
+    res.render('login.ejs', { error: error });
 });
 
-// Login-Route anpassen
 app.post('/login', (req, res) => {
     const { username, password } = req.body;
     db.get(`SELECT * FROM users WHERE username = ?`, [username], (err, user) => {
         if (err) {
             console.error(err);
-            res.send('Fehler bei der Anmeldung.');
+            res.redirect('/login?error=Fehler bei der Anmeldung.');
         } else if (!user) {
-            res.send('Ungültige Anmeldedaten.');
+            res.redirect('/login?error=Ungültige Anmeldedaten.');
         } else {
             bcrypt.compare(password, user.password, (err, result) => {
                 if (result) {
                     req.session.userId = user.id;
                     res.redirect('/portfolio'); // Benutzer zur Portfolioseite weiterleiten
                 } else {
-                    res.send('Ungültige Anmeldedaten.');
+                    res.redirect('/login?error=Ungültige Anmeldedaten.');
                 }
             });
         }
@@ -184,6 +161,19 @@ app.get('/portfolio', isAuthenticated, async (req, res) => {
         console.error('Fehler beim Laden des Portfolios:', error);
         res.send('Fehler beim Laden des Portfolios');
     }
+});
+
+// Route zum Löschen einer Position hinzufügen
+app.post('/deletePosition', isAuthenticated, (req, res) => {
+    const { id } = req.body;
+    db.run(`DELETE FROM positions WHERE id = ? AND user_id = ?`, [id, req.session.userId], function(err) {
+        if (err) {
+            console.error(err);
+            res.send('Fehler beim Löschen der Position');
+        } else {
+            res.redirect('/portfolio');
+        }
+    });
 });
 
 // Route zum Hinzufügen einer Position

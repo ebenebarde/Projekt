@@ -2,80 +2,163 @@
 <html>
 <head>
     <title>Portfolio Management</title>
-    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 80%;
+            margin: auto;
+            overflow: hidden;
+        }
+        header {
+            background: #333;
+            color: #fff;
+            padding-top: 30px;
+            min-height: 70px;
+            border-bottom: #77aaff 3px solid;
+        }
+        header a {
+            color: #fff;
+            text-decoration: none;
+            text-transform: uppercase;
+            font-size: 16px;
+        }
+        header ul {
+            padding: 0;
+            list-style: none;
+        }
+        header li {
+            float: right;
+            display: inline;
+            padding: 0 20px 0 20px;
+        }
+        header #branding {
+            float: left;
+        }
+        header #branding h1 {
+            margin: 0;
+        }
+        header nav {
+            float: right;
+            margin-top: 10px;
+        }
+        header .highlight, header .current a {
+            color: #77aaff;
+            font-weight: bold;
+        }
+        header a:hover {
+            color: #77aaff;
+            font-weight: bold;
+        }
+        .form-container {
+            background: #fff;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .form-container input, .form-container button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 15px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .btn {
+            display: inline-block;
+            color: #fff;
+            background-color: #333;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        .btn:hover {
+            background-color: #77aaff;
+        }
+    </style>
 </head>
 <body>
-    <!-- Abmelde-Button -->
-    <div class="logout-container">
-        <form action="/logout" method="GET" class="logout-form">
-            <button type="submit" class="logout-btn">Abmelden</button>
-        </form>
+    <header>
+        <div class="container">
+            <div id="branding">
+                <h1>Portfolio Management</h1>
+            </div>
+            <nav>
+                <ul>
+                    <li><form action="/logout" method="get" style="display:inline;"><button type="submit" class="btn">Abmelden</button></form></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+    <div class="container">
+        <div class="form-container">
+            <h2>Position hinzufügen</h2>
+            <form action="/addPosition" method="post">
+                <input type="text" name="symbol" placeholder="Symbol" required>
+                <input type="text" name="name" placeholder="Name der Aktie" required>
+                <input type="number" step="0.01" name="purchase_price" placeholder="Kaufwert ($)" required>
+                <input type="number" name="quantity" placeholder="Menge" required>
+                <button type="submit" class="btn">Position hinzufügen</button>
+            </form>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Symbol</th>
+                    <th>Name</th>
+                    <th>Kaufwert ($)</th>
+                    <th>Menge</th>
+                    <th>Aktueller Preis ($)</th>
+                    <th>Positionswert ($)</th>
+                    <th>Gewinn / Verlust seit Kauf ($)</th>
+                    <th>Aktionen</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% positions.forEach(function(position) {
+                    let positionValue = position.currentPrice * position.quantity;
+                    let cost = position.purchase_price * position.quantity;
+                    let profitLoss = positionValue - cost;
+                %>
+                <tr>
+                    <td><%= position.symbol %></td>
+                    <td><%= position.name %></td>
+                    <td><%= position.purchase_price.toFixed(2) %></td>
+                    <td><%= position.quantity %></td>
+                    <td><%= position.currentPrice.toFixed(2) %></td>
+                    <td><%= positionValue.toFixed(2) %></td>
+                    <td><%= profitLoss.toFixed(2) %></td>
+                    <td>
+                        <form method="POST" action="/deletePosition" style="display:inline;">
+                            <input type="hidden" name="id" value="<%= position.id %>">
+                            <button type="submit" class="btn">Löschen</button>
+                        </form>
+                    </td>
+                </tr>
+                <% }); %>
+            </tbody>
+        </table>
     </div>
-
-    <h1>Ihr Portfolio</h1>
-
-    <!-- Erfolgsmeldung -->
-    <% if (typeof message !== 'undefined') { %>
-        <p class="message success"><%= message %></p>
-    <% } %>
-
-    <!-- Fehlermeldung -->
-    <% if (typeof error !== 'undefined') { %>
-        <p class="message error"><%= error %></p>
-    <% } %>
-
-    <!-- API-Fehler anzeigen -->
-    <% if (apiErrors && apiErrors.length > 0) { %>
-        <ul class="message error">
-            <% apiErrors.forEach(function(err) { %>
-                <li><%= err %></li>
-            <% }); %>
-        </ul>
-    <% } %>
-
-    <form action="/addPosition" method="post">
-        <input type="text" name="symbol" placeholder="Symbol" required>
-        <input type="text" name="name" placeholder="Name der Aktie" required>
-        <input type="number" step="0.01" name="purchase_price" placeholder="Kaufwert ($)" required>
-        <input type="number" name="quantity" placeholder="Menge" required>
-        <button type="submit">Position hinzufügen</button>
-    </form>
-    <table>
-        <thead>
-            <tr>
-                <th>Symbol</th>
-                <th>Name</th>
-                <th>Kaufwert ($)</th>
-                <th>Menge</th>
-                <th>Aktueller Preis ($)</th>
-                <th>Positionswert ($)</th>
-                <th>Gewinn / Verlust seit Kauf ($)</th>
-                <th>Aktionen</th>
-            </tr>
-        </thead>
-        <tbody>
-            <% positions.forEach(function(position) {
-                let positionValue = position.currentPrice * position.quantity;
-                let cost = position.purchase_price * position.quantity;
-                let profitLoss = positionValue - cost;
-            %>
-            <tr>
-                <td><%= position.symbol %></td>
-                <td><%= position.name %></td>
-                <td><%= position.purchase_price.toFixed(2) %></td>
-                <td><%= position.quantity %></td>
-                <td><%= position.currentPrice.toFixed(2) %></td>
-                <td><%= positionValue.toFixed(2) %></td>
-                <td><%= profitLoss.toFixed(2) %></td>
-                <td>
-                    <form action="/deletePosition" method="POST" style="display:inline;">
-                        <input type="hidden" name="positionId" value="<%= position.id %>">
-                        <button type="submit" class="delete-btn">Löschen</button>
-                    </form>
-                </td>
-            </tr>
-            <% }); %>
-        </tbody>
-    </table>
 </body>
 </html>
