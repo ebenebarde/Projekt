@@ -30,6 +30,7 @@ h1 {
 .logout-container {
     display: flex;
     justify-content: center;
+    align-items: center;
     margin: 10px auto;
     width: 100%;
 }
@@ -54,45 +55,6 @@ h1 {
     background: var(--accent-primary);
     color: var(--text-primary);
     box-shadow: 0 0 8px rgba(226, 0, 116, 0.3);
-}
-
-.logout-container {
-    text-align: center;
-    margin: 20px auto;
-    width: 100%;
-}
-
-.logout-form {
-    position: static;
-    display: inline-block;
-}
-
-.logout-form button {
-    width: auto;
-    padding: 8px 20px;
-    background: transparent;
-    border: 2px solid var(--accent-primary);
-    color: var(--accent-primary);
-    transition: all 0.3s ease;
-}
-
-.logout-btn {
-    width: auto;
-    padding: 8px 20px;
-    background: transparent;
-    border: 2px solid var(--accent-primary);
-    color: var(--accent-primary);
-    font-size: 0.9em;
-    margin: 0;
-    min-width: 120px;
-    transition: all 0.3s ease;
-}
-
-.logout-btn:hover, 
-.logout-form button:hover {
-    background: var(--accent-primary);
-    color: var(--text-primary);
-    box-shadow: 0 0 10px rgba(226, 0, 116, 0.3);
 }
 
 form {
@@ -166,34 +128,10 @@ th {
     font-weight: bold;
     text-transform: uppercase;
     letter-spacing: 1px;
-    font-size: 0.9em;
-}
-
-tr:nth-child(even) {
-    background-color: var(--bg-secondary);
 }
 
 tr:hover {
     background: rgba(255, 0, 255, 0.05);
-}
-
-p {
-    text-align: center;
-}
-
-ul {
-    list-style-type: none;
-    padding: 0;
-    text-align: center;
-}
-
-ul li {
-    color: var(--accent-primary);
-}
-
-canvas {
-    display: block;
-    margin: 20px auto;
 }
 
 .message {
@@ -222,10 +160,15 @@ canvas {
     border: 1px solid var(--accent-primary);
     padding: 5px 15px;
     font-size: 0.9em;
+    color: var(--accent-primary);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
 }
 
 .delete-btn:hover {
     background: var(--accent-primary);
+    color: var(--text-primary);
 }
 
 @media (max-width: 768px) {

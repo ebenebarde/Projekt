@@ -16,17 +16,17 @@
 
     <!-- Erfolgsmeldung -->
     <% if (typeof message !== 'undefined') { %>
-        <p style="color: green;"><%= message %></p>
+        <p class="message success"><%= message %></p>
     <% } %>
 
     <!-- Fehlermeldung -->
     <% if (typeof error !== 'undefined') { %>
-        <p style="color: red;"><%= error %></p>
+        <p class="message error"><%= error %></p>
     <% } %>
 
     <!-- API-Fehler anzeigen -->
     <% if (apiErrors && apiErrors.length > 0) { %>
-        <ul>
+        <ul class="message error">
             <% apiErrors.forEach(function(err) { %>
                 <li><%= err %></li>
             <% }); %>
@@ -70,7 +70,7 @@
                 <td>
                     <form action="/deletePosition" method="POST" style="display:inline;">
                         <input type="hidden" name="positionId" value="<%= position.id %>">
-                        <button type="submit">Löschen</button>
+                        <button type="submit" class="delete-btn">Löschen</button>
                     </form>
                 </td>
             </tr>
