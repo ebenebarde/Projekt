@@ -35,6 +35,7 @@
         <form method="POST" action="/register">
             <input type="text" name="username" placeholder="Benutzername" required>
             <input type="password" name="password" placeholder="Passwort" required>
+            <input type="password" name="confirm_password" placeholder="Passwort bestätigen" required>
             <button type="submit" class="btn">Registrieren</button>
         </form>
         <% if (error) { %>
